@@ -1,0 +1,11 @@
+# Dependabot are scheduled to avoid contention with normal workday CI usage. We
+# start running updates at 3AM UTC
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directories:
+    - "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: Etc/UTC

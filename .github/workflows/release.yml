@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  DOCKER_REGISTRY: ghcr.io/linkerd
+
+jobs:
+  meta:
+    runs-on: ubuntu-24.04
+    steps:
+    - id: version
+      run: |
+        if [[ ${{ github.event_name }} == push ]]; then
+          # the version var is the same as tag without the "v" prefix
+          version=${{ github.ref_name }}
+          version=${version#v}
+        else
+          version=0.0.0-undefined
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+  info:
+    needs: meta
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Info
+        run: |
+          echo "tag=${{ github.ref_name }}"
+          echo "version=${{ needs.meta.outputs.version }}"
+
+  helm_chart_package:
+    needs: meta
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - name: Helm package (unsigned)
+      run: helm package --version ${{ needs.meta.outputs.version }} .
+    - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121
+      with:
+        registry: ghcr.io
+        username: buoyantio
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Push chart
+      run: |
+        artifact=linkerd-cert-manager-${{ needs.meta.outputs.version }}
+        helm push ${artifact}.tgz oci://${{ env.DOCKER_REGISTRY }}/charts

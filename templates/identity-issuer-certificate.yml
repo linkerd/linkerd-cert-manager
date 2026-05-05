@@ -1,0 +1,35 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  # This is the cert-manager Certificate for the Linkerd identity issuer.
+  # It describes the identity issuer certificate that cert-manager should
+  # issue.
+  #
+  # It relies on the linkerd-identity-issuer ClusterIssuer above.
+  name: linkerd-identity-issuer
+  namespace: linkerd
+spec:
+  # This tells cert-manager which issuer to use for this Certificate:
+  # in this case, the ClusterIssuer named linkerd-identity-issuer.
+  issuerRef:
+    name: linkerd-identity-issuer
+    kind: ClusterIssuer
+
+  # The issued certificate will be saved in this Secret _in the same
+  # namespace as this Certificate resource_. For the identity issuer,
+  # this MUST be the linkerd namespace, because Linkerd requires access
+  # to the trust anchor's private key.
+  secretName: linkerd-identity-issuer
+
+  # These are details about the certificate to be issued: check
+  # out the cert-manager docs for more, but realize that setting
+  # the private key's rotationPolicy to Always is _very_ important,
+  # and that for Linkerd you _must_ set isCA to true!
+  isCA: true
+  commonName: identity.linkerd.cluster.local
+  duration: {{ .Values.identityIssuer.duration }}
+  renewBefore: {{ .Values.identityIssuer.renewBefore }}
+  privateKey:
+    rotationPolicy: Always
+    algorithm: ECDSA

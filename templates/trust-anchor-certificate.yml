@@ -1,0 +1,39 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  # This is the cert-manager Certificate for the Linkerd trust anchor. It
+  # describes the trust anchor certificate that cert-manager should
+  # issue.
+  #
+  # It relies on the linkerd-trust-root-issuer above.
+  name: linkerd-trust-anchor
+  # This namespace is important: the certificate issued will be saved in
+  # a Secret in this namespace. We're using the cert-manager namespace
+  # here because only cert-manager should have access to the trust
+  # anchor's private key.
+  namespace: {{ .Values.certManagerNamespace }}
+spec:
+  # This tells cert-manager which issuer to use for this Certificate: in
+  # this case, the Issuer named linkerd-trust-root-issuer.
+  issuerRef:
+    kind: Issuer
+    name: linkerd-trust-root-issuer
+
+  # The issued certificate will be saved in this Secret _in the same
+  # namespace as this Certificate resource_. For the trust anchor, this
+  # should NOT be the linkerd namespace, because only cert-manager should
+  # have access to the trust anchor's private key.
+  secretName: linkerd-trust-anchor
+
+  # These are details about the certificate to be issued: check
+  # out the cert-manager docs for more, but realize that setting
+  # the private key's rotationPolicy to Always is _very_ important,
+  # and that for Linkerd you _must_ set isCA to true!
+  isCA: true
+  commonName: root.linkerd.cluster.local
+  duration: {{ .Values.trustAnchor.duration }}
+  renewBefore: {{ .Values.trustAnchor.renewBefore }}
+  privateKey:
+    rotationPolicy: Always
+    algorithm: ECDSA

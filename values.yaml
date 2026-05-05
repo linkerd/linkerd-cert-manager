@@ -1,0 +1,16 @@
+# -- Namespace where cert-manager is installed. The trust-root Issuer, the
+# trust-anchor Certificate, and its Secret are created here so that only
+# cert-manager has access to the trust anchor's private key.
+certManagerNamespace: cert-manager
+
+trustAnchor:
+  # -- Validity duration for the trust anchor certificate (default: ~6 months)
+  duration: 4380h0m0s
+  # -- Renewal window for the trust anchor certificate (default: ~2 months before expiry)
+  renewBefore: 1460h0m0s
+
+identityIssuer:
+  # -- Validity duration for the identity issuer certificate (default: 2 weeks)
+  duration: 336h0m0s
+  # -- Renewal window for the identity issuer certificate (default: 3 days before expiry)
+  renewBefore: 72h0m0s

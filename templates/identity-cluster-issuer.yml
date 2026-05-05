@@ -1,0 +1,20 @@
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  # This is the cert-manager ClusterIssuer used for the Linkerd identity
+  # issuer. It describes how cert-manager should create the identity
+  # issuer certificate.
+  #
+  # It's a ClusterIssuer because the identity issuer certificate MUST be
+  # created in the linkerd namespace, and a ClusterIssuer is the way to
+  # allow crossing namespaces with cert-manager.
+  #
+  # As written, this ClusterIssuer uses the linkerd-trust-anchor Secret
+  # created by the linkerd-trust-anchor Certificate above as its CA. You
+  # may need to edit this to match your organization's needs.
+  name: linkerd-identity-issuer
+  namespace: {{ .Values.certManagerNamespace }}
+spec:
+  ca:
+    secretName: linkerd-trust-anchor

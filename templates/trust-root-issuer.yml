@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  # This is the cert-manager Issuer used for the Linkerd trust anchor. It
+  # describes how cert-manager should create the trust anchor
+  # certificate.
+  #
+  # THIS IS A SELF-SIGNED ISSUER. You will very likely need to edit this
+  # to match your organization's needs.
+  name: linkerd-trust-root-issuer
+  namespace: {{ .Values.certManagerNamespace }}
+spec:
+  selfSigned: {}
