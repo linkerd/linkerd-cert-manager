@@ -14,7 +14,6 @@ metadata:
   # created by the linkerd-trust-anchor Certificate above as its CA. You
   # may need to edit this to match your organization's needs.
   name: linkerd-identity-issuer
-  namespace: {{ .Values.certManagerNamespace }}
 spec:
   ca:
     secretName: linkerd-trust-anchor
