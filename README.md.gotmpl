@@ -1,0 +1,44 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+## Rooting the trust anchor
+
+By default the trust-root Issuer is **self-signed**: cert-manager generates a
+fresh root and signs the Linkerd trust anchor with it. This requires no extra
+configuration.
+
+If you instead want the trust anchor to be an intermediary rooted at a
+certificate and private key you already have, provide them via `trustRoot.cert`
+and `trustRoot.key`. When both are set, the trust-root Issuer becomes a
+cert-manager `ca` Issuer backed by those credentials, and the trust anchor it
+signs chains up to your provided root.
+
+The PEM contents are most easily supplied with `--set-file`:
+
+```sh
+helm install linkerd-cert-manager . -n cert-manager \
+  --set-file trustRoot.cert=root.crt \
+  --set-file trustRoot.key=root.key
+```
+
+> **Note:** with this approach the root private key passes through Helm's
+> release storage and is stored in a plain `kubernetes.io/tls` Secret named
+> `linkerd-trust-root-ca` in the cert-manager namespace. If that is a concern,
+> create that Secret out-of-band instead and have the Issuer reference it.
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.maintainersSection" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}

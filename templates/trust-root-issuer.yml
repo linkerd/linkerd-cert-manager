@@ -1,3 +1,34 @@
+{{- if and .Values.trustRoot.cert .Values.trustRoot.key }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  # Holds the externally-provided root-of-trust cert and key that the CA
+  # Issuer below uses to sign the Linkerd trust anchor. Populated via
+  # `--set-file trustRoot.cert=root.crt --set-file trustRoot.key=root.key`.
+  name: linkerd-trust-root-ca
+  namespace: {{ .Values.certManagerNamespace }}
+type: kubernetes.io/tls
+data:
+  tls.crt: {{ .Values.trustRoot.cert | b64enc }}
+  tls.key: {{ .Values.trustRoot.key | b64enc }}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  # This is the cert-manager Issuer used for the Linkerd trust anchor. It
+  # describes how cert-manager should create the trust anchor
+  # certificate.
+  #
+  # THIS IS A CA ISSUER backed by the externally-provided root cert/key
+  # in the Secret above. The trust anchor it signs is therefore an
+  # intermediary rooted at that provided certificate.
+  name: linkerd-trust-root-issuer
+  namespace: {{ .Values.certManagerNamespace }}
+spec:
+  ca:
+    secretName: linkerd-trust-root-ca
+{{- else }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Issuer
@@ -7,8 +38,11 @@ metadata:
   # certificate.
   #
   # THIS IS A SELF-SIGNED ISSUER. You will very likely need to edit this
-  # to match your organization's needs.
+  # to match your organization's needs, or provide a root cert/key via
+  # `trustRoot.cert` / `trustRoot.key` to root the trust anchor at an
+  # existing certificate instead.
   name: linkerd-trust-root-issuer
   namespace: {{ .Values.certManagerNamespace }}
 spec:
   selfSigned: {}
+{{- end }}

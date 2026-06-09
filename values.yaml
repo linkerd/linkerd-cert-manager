@@ -3,6 +3,16 @@
 # cert-manager has access to the trust anchor's private key.
 certManagerNamespace: cert-manager
 
+trustRoot:
+  # -- PEM-encoded root certificate to root the trust anchor at. When both
+  # `cert` and `key` are set, the trust-root Issuer becomes a CA issuer
+  # backed by them; otherwise it falls back to a self-signed Issuer. Intended
+  # to be fed via `--set-file trustRoot.cert=root.crt`.
+  cert: ""
+  # -- PEM-encoded private key matching `cert`. Fed via
+  # `--set-file trustRoot.key=root.key`.
+  key: ""
+
 trustAnchor:
   # -- Validity duration for the trust anchor certificate (default: ~6 months)
   duration: 4380h0m0s
