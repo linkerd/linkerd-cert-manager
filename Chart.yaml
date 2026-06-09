@@ -2,4 +2,4 @@ apiVersion: v2
 name: linkerd-cert-manager
 description: Bootstraps the cert-manager Issuers and Certificates that provide Linkerd's mTLS trust anchor and identity issuer PKI. See https://linkerd.io/2/tasks/automatically-rotating-control-plane-tls-credentials/
 type: application
-version: 0.1.1
+version: 0.2.0
