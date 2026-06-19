@@ -6,17 +6,32 @@ certManagerNamespace: cert-manager
 trustRoot:
   # -- PEM-encoded root certificate to root the trust anchor at. When both
   # `cert` and `key` are set, the trust-root Issuer becomes a CA issuer
-  # backed by them; otherwise it falls back to a self-signed Issuer. Intended
-  # to be fed via `--set-file trustRoot.cert=root.crt`.
+  # backed by them, and cert-manager generates a new trust anchor *signed by*
+  # this certificate; otherwise it falls back to a self-signed Issuer.
+  # Ignored when `trustAnchor.cert`/`trustAnchor.key` are set. Intended to be
+  # fed via `--set-file trustRoot.cert=root.crt`.
   cert: ""
   # -- PEM-encoded private key matching `cert`. Fed via
   # `--set-file trustRoot.key=root.key`.
   key: ""
 
 trustAnchor:
-  # -- Validity duration for the trust anchor certificate (default: ~6 months)
+  # -- PEM-encoded certificate to use *as* the trust anchor verbatim. When both
+  # `cert` and `key` are set, cert-manager does NOT generate a trust anchor:
+  # the provided cert/key are injected directly as the `linkerd-trust-anchor`
+  # Secret, no trust-root Issuer is rendered, and `duration`/`renewBefore` and
+  # the `trustRoot.*` values are ignored. This cert is exactly what you must
+  # install as Linkerd's `identity.trustAnchorsPEM`. Fed via
+  # `--set-file trustAnchor.cert=ca.crt`.
+  cert: ""
+  # -- PEM-encoded private key matching `cert`. Fed via
+  # `--set-file trustAnchor.key=ca.key`.
+  key: ""
+  # -- Validity duration for the trust anchor certificate (default: ~6 months).
+  # Ignored when `cert`/`key` are set.
   duration: 4380h0m0s
-  # -- Renewal window for the trust anchor certificate (default: ~2 months before expiry)
+  # -- Renewal window for the trust anchor certificate (default: ~2 months before expiry).
+  # Ignored when `cert`/`key` are set.
   renewBefore: 1460h0m0s
 
 identityIssuer:

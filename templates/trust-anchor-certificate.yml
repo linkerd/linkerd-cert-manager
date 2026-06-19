@@ -1,3 +1,23 @@
+{{- if and .Values.trustAnchor.cert .Values.trustAnchor.key }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  # The externally-provided trust anchor cert and key, injected verbatim as
+  # the linkerd-trust-anchor Secret. cert-manager does NOT generate this
+  # certificate: the cert you provide IS the Linkerd trust anchor, and the
+  # linkerd-identity-issuer ClusterIssuer signs the identity issuer directly
+  # with it. Because the anchor is supplied here, no linkerd-trust-root-issuer
+  # is rendered. Populated via `--set-file trustAnchor.cert=ca.crt
+  # --set-file trustAnchor.key=ca.key`. The cert you provide here is exactly
+  # what you must install as Linkerd's identity.trustAnchorsPEM.
+  name: linkerd-trust-anchor
+  namespace: {{ .Values.certManagerNamespace }}
+type: kubernetes.io/tls
+data:
+  tls.crt: {{ .Values.trustAnchor.cert | b64enc }}
+  tls.key: {{ .Values.trustAnchor.key | b64enc }}
+{{- else }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -37,3 +57,4 @@ spec:
   privateKey:
     rotationPolicy: Always
     algorithm: ECDSA
+{{- end }}

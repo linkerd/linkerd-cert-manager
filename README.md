@@ -1,6 +1,6 @@
 # linkerd-cert-manager
 
-![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Bootstraps the cert-manager Issuers and Certificates that provide Linkerd's mTLS trust anchor and identity issuer PKI. See https://linkerd.io/2/tasks/automatically-rotating-control-plane-tls-credentials/
 
@@ -10,13 +10,38 @@ By default the trust-root Issuer is **self-signed**: cert-manager generates a
 fresh root and signs the Linkerd trust anchor with it. This requires no extra
 configuration.
 
-If you instead want the trust anchor to be an intermediary rooted at a
+There are two ways to base the PKI on credentials you already have. They are
+mutually exclusive; pick the one that matches what you want the trust anchor to
+be.
+
+### Use your certificate *as* the trust anchor (`trustAnchor.cert`/`trustAnchor.key`)
+
+If you want the Linkerd trust anchor to **be** a certificate you already have,
+provide it via `trustAnchor.cert` and `trustAnchor.key`. When both are set,
+cert-manager does **not** generate a trust anchor: the cert/key are injected
+verbatim as the `linkerd-trust-anchor` Secret, no trust-root Issuer is rendered,
+and the identity issuer is signed directly with your certificate. The cert you
+provide here is exactly what you must install as Linkerd's
+`identity.trustAnchorsPEM`.
+
+```sh
+helm install linkerd-cert-manager . -n cert-manager \
+  --set-file trustAnchor.cert=ca.crt \
+  --set-file trustAnchor.key=ca.key
+```
+
+In this mode `trustAnchor.duration`/`trustAnchor.renewBefore` and the
+`trustRoot.*` values are ignored (cert-manager isn't issuing the anchor, so
+there's nothing for it to renew).
+
+### Root the trust anchor at your certificate (`trustRoot.cert`/`trustRoot.key`)
+
+If you instead want the trust anchor to be an intermediary **rooted at** a
 certificate and private key you already have, provide them via `trustRoot.cert`
 and `trustRoot.key`. When both are set, the trust-root Issuer becomes a
-cert-manager `ca` Issuer backed by those credentials, and the trust anchor it
-signs chains up to your provided root.
-
-The PEM contents are most easily supplied with `--set-file`:
+cert-manager `ca` Issuer backed by those credentials, and cert-manager generates
+a fresh trust anchor that chains up to your provided root. (Ignored when
+`trustAnchor.cert`/`trustAnchor.key` are set.)
 
 ```sh
 helm install linkerd-cert-manager . -n cert-manager \
@@ -24,10 +49,11 @@ helm install linkerd-cert-manager . -n cert-manager \
   --set-file trustRoot.key=root.key
 ```
 
-> **Note:** with this approach the root private key passes through Helm's
-> release storage and is stored in a plain `kubernetes.io/tls` Secret named
-> `linkerd-trust-root-ca` in the cert-manager namespace. If that is a concern,
-> create that Secret out-of-band instead and have the Issuer reference it.
+> **Note:** with either approach the provided private key passes through Helm's
+> release storage and is stored in a plain `kubernetes.io/tls` Secret in the
+> cert-manager namespace (`linkerd-trust-anchor` or `linkerd-trust-root-ca`
+> respectively). If that is a concern, create that Secret out-of-band instead
+> and reference it.
 
 ## Values
 
@@ -36,9 +62,11 @@ helm install linkerd-cert-manager . -n cert-manager \
 | certManagerNamespace | string | `"cert-manager"` | Namespace where cert-manager is installed. The trust-root Issuer, the trust-anchor Certificate, and its Secret are created here so that only cert-manager has access to the trust anchor's private key. |
 | identityIssuer.duration | string | `"336h0m0s"` | Validity duration for the identity issuer certificate (default: 2 weeks) |
 | identityIssuer.renewBefore | string | `"72h0m0s"` | Renewal window for the identity issuer certificate (default: 3 days before expiry) |
-| trustAnchor.duration | string | `"4380h0m0s"` | Validity duration for the trust anchor certificate (default: ~6 months) |
-| trustAnchor.renewBefore | string | `"1460h0m0s"` | Renewal window for the trust anchor certificate (default: ~2 months before expiry) |
-| trustRoot.cert | string | `""` | PEM-encoded root certificate to root the trust anchor at. When both `cert` and `key` are set, the trust-root Issuer becomes a CA issuer backed by them; otherwise it falls back to a self-signed Issuer. Intended to be fed via `--set-file trustRoot.cert=root.crt`. |
+| trustAnchor.cert | string | `""` | PEM-encoded certificate to use *as* the trust anchor verbatim. When both `cert` and `key` are set, cert-manager does NOT generate a trust anchor: the provided cert/key are injected directly as the `linkerd-trust-anchor` Secret, no trust-root Issuer is rendered, and `duration`/`renewBefore` and the `trustRoot.*` values are ignored. This cert is exactly what you must install as Linkerd's `identity.trustAnchorsPEM`. Fed via `--set-file trustAnchor.cert=ca.crt`. |
+| trustAnchor.duration | string | `"4380h0m0s"` | Validity duration for the trust anchor certificate (default: ~6 months). Ignored when `cert`/`key` are set. |
+| trustAnchor.key | string | `""` | PEM-encoded private key matching `cert`. Fed via `--set-file trustAnchor.key=ca.key`. |
+| trustAnchor.renewBefore | string | `"1460h0m0s"` | Renewal window for the trust anchor certificate (default: ~2 months before expiry). Ignored when `cert`/`key` are set. |
+| trustRoot.cert | string | `""` | PEM-encoded root certificate to root the trust anchor at. When both `cert` and `key` are set, the trust-root Issuer becomes a CA issuer backed by them, and cert-manager generates a new trust anchor *signed by* this certificate; otherwise it falls back to a self-signed Issuer. Ignored when `trustAnchor.cert`/`trustAnchor.key` are set. Intended to be fed via `--set-file trustRoot.cert=root.crt`. |
 | trustRoot.key | string | `""` | PEM-encoded private key matching `cert`. Fed via `--set-file trustRoot.key=root.key`. |
 
 ----------------------------------------------

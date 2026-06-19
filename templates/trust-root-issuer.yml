@@ -1,4 +1,12 @@
-{{- if and .Values.trustRoot.cert .Values.trustRoot.key }}
+{{- if and .Values.trustAnchor.cert .Values.trustAnchor.key }}
+{{- /*
+  An externally-provided trust anchor was supplied via trustAnchor.cert/key,
+  so it is injected directly as the linkerd-trust-anchor Secret (see
+  trust-anchor-certificate.yml). cert-manager does not generate the trust
+  anchor in this mode, so no trust-root Issuer is needed and nothing is
+  rendered here.
+*/}}
+{{- else if and .Values.trustRoot.cert .Values.trustRoot.key }}
 ---
 apiVersion: v1
 kind: Secret
