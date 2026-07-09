@@ -1,6 +1,6 @@
 # linkerd-cert-manager
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Bootstraps the cert-manager Issuers and Certificates that provide Linkerd's mTLS trust anchor and identity issuer PKI. See https://linkerd.io/2/tasks/automatically-rotating-control-plane-tls-credentials/
 
@@ -54,6 +54,28 @@ helm install linkerd-cert-manager . -n cert-manager \
 > cert-manager namespace (`linkerd-trust-anchor` or `linkerd-trust-root-ca`
 > respectively). If that is a concern, create that Secret out-of-band instead
 > and reference it.
+
+## Renewing the identity issuer vs. the trust anchor
+
+The `linkerd-identity-issuer` certificate may be left to renew **automatically
+only if the `linkerd-trust-anchor` certificate is not set to renew
+automatically**. The identity issuer is signed by the trust anchor's key, and
+cert-manager renews the anchor with a new key (`privateKey.rotationPolicy:
+Always`). If the anchor renews on its own while the identity issuer is still
+signed by the old key, the trust chain between the two is broken.
+
+- If the trust anchor does **not** auto-renew (for example an externally
+  provided anchor via `trustAnchor.cert`/`trustAnchor.key`, or one you rotate
+  deliberately), the identity issuer can safely auto-renew through its
+  `identityIssuer.duration`/`identityIssuer.renewBefore` settings.
+- If the trust anchor **is** set to auto-renew, do not rely on the identity
+  issuer's automatic renewal; renew it manually with the
+  [`cmctl`](https://cert-manager.io/docs/reference/cmctl/) CLI so it is
+  re-signed by the current anchor:
+
+  ```sh
+  cmctl renew linkerd-identity-issuer -n linkerd
+  ```
 
 ## Values
 
